@@ -1,24 +1,67 @@
-import enums.StudyProfile;
+
+import comparator.StudentComparator;
+import comparator.UniversityComparator;
+import enums.StudentComparatorType;
+import enums.UniversityComparatorType;
+import io.JsonWriter;
+import io.XlsReader;
+import io.XlsWriter;
+import io.XmlWriter;
+import model.FullInfo;
+import model.Statistics;
 import model.Student;
 import model.University;
+import util.ComparatorUtil;
+import util.StatisticsUtil;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
+import static java.util.logging.Level.INFO;
 
 public class Application {
 
+    private static final Logger logger = Logger.getLogger(Application.class.getName());
+
     public static void main(String[] args) {
 
-        Student student = new Student();
-        student.setAvgExamScore((float)8.4)
-                .setCurrentCourseNumber(4)
-                .setFullName("Кулешевич Иван Сергеевич")
-                .setUniversityId("932");
-        System.out.println(student);
+        try {
+            LogManager.getLogManager().readConfiguration(
+                    Application.class.getResourceAsStream("/logging.properties"));
+        } catch (IOException e) {
+            System.err.println("Could not setup logger configuration: " + e.toString());
+        }
 
-        University university = new University();
-        university.setId("932")
-                .setFullName("BELARUSIAN STATE UNIVERSITY OF INFORMATICS AND RADIOELECTRONICS")
-                .setShortName("BSUIR")
-                .setYearOfFoundation(1964)
-                .setMainProfile(StudyProfile.COMPUTER_SCIENCE);
-        System.out.println(university);
+        logger.log(INFO, "Application started, Logger configured");
+
+        List<University> universities =
+                XlsReader.readXlsUniversities("src/main/resources/universityInfo.xlsx");
+        UniversityComparator universityComparator =
+                ComparatorUtil.getUniversityComparator(UniversityComparatorType.YEAR);
+        universities.sort(universityComparator);
+
+        List<Student> students =
+                XlsReader.readXlsStudents("src/main/resources/universityInfo.xlsx");
+        StudentComparator studentComparator =
+                ComparatorUtil.getStudentComparator(StudentComparatorType.AVG_EXAM_SCORE);
+        students.sort(studentComparator);
+
+        List<Statistics> statisticsList = StatisticsUtil.createStatistics(students, universities);
+        XlsWriter.writeXlsStatistics(statisticsList, "statistics.xlsx");
+
+        FullInfo fullInfo = new FullInfo()
+                .setStudentList(students)
+                .setUniversityList(universities)
+                .setStatisticsList(statisticsList)
+                .setProcessDate(new Date());
+
+        XmlWriter.generateXmlReq(fullInfo);
+        JsonWriter.writeJsonReq(fullInfo);
+
+        logger.log(INFO, "Application finished");
     }
 }
+

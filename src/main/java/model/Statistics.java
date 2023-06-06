@@ -2,11 +2,24 @@ package model;
 
 import enums.StudyProfile;
 
+import jakarta.xml.bind.annotation.*;
+
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Statistics {
+
+    @XmlElement(name = "universityProfile")
     private StudyProfile profile;
+
+    @XmlElement(name = "avgScore")
     private float avgExamScore;
+
+    @XmlTransient
     private int numberOfStudents;
+
+    @XmlTransient
     private int numberOfUniversities;
+
+    @XmlTransient
     private String universityNames;
 
     public StudyProfile getProfile() {
